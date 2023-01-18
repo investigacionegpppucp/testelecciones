@@ -1,11 +1,96 @@
-# Hello bookdown 
+# Mito 1
 
-All chapters start with a first-level heading followed by your chapter title, like the line above. There should be only one first-level heading (`#`) per .Rmd file.
+<font size="6"> **El porcentaje de participación electoral ha disminuído.**</font>
 
-## A section23
+Se observa que la participación electoral ha disminuído a partir de las Elecciones Regionales y Municipales del 2010. En el 2022, se registró el porcentaje más bajo de participación electoral. 
 
-All chapter sections start with a second-level (`##`) or higher heading followed by your section title, like the sections above and below here. You can have as many as you want within a chapter.
 
-### An unnumbered section {-}
 
-Chapters and sections are numbered by default. To un-number a heading, add a `{.unnumbered}` or the shorter `{-}` at the end of the heading, like in this section.
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(googlesheets4)
+regional=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRJdUE26KIgGmrUT8DEUzY5f3JsGlK0-eQdoTeWQw2SPrGpA_bI54jpSDnyE-hBBAoIsBRiAJzoghy-/pub?gid=2080689295&single=true&output=csv")
+
+
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(dplyr)
+library(tidyverse)
+library(car)
+regional_mito1 =regional%>% 
+  filter(Vuelta=="Primera")%>%
+  filter(Eleccion=="Regional 2002"|Eleccion=="Regional 2006"|Eleccion=="Regional 2010"|Eleccion=="Regional 2014"|Eleccion=="Regional 2018"|Eleccion=="Regional 2022")%>%
+  select(Region,V_emitidos,V_validos,Electores,Eleccion)%>%
+  unique()
+
+regional_mito1$Eleccion<-recode(regional_mito1$Eleccion, "'Regional 2002'='2002'; 'Regional 2006'='2006'; 'Regional 2010'='2010'; 'Regional 2014'='2014'; 'Regional 2018'='2018';'Regional 2022'='2022'")
+regional_mito1$Eleccion=as.factor(regional_mito1$Eleccion)
+
+
+```
+
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+
+regional_mito1 %>%
+  select(Region,V_emitidos,V_validos,Electores,Eleccion)%>%
+  group_by(Eleccion) %>%
+  summarise(across(c(Electores, V_emitidos,V_validos),sum))%>%
+  mutate(Participacion=(V_emitidos/Electores)*100)%>%
+ggplot(aes(x=Eleccion, y=Participacion, group=1)) +
+  geom_line(colour = "#e55555")+
+  geom_point()+
+  ggtitle("Porcentaje de Participación en Elecciones Regionales")+
+  xlab("Proceso Electoral")+
+  ylab("Porcentaje de Participación")+theme_minimal()+ylim(70,100)+
+  geom_text(aes(label=paste0(round(Participacion,0),"%"),vjust=-.9))
+```
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+
+regional_mito1 =regional_mito1%>% 
+  mutate(Participacion=(V_emitidos/Electores)*100)
+```
+
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(googlesheets4)
+comparativo=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTNhvA-qt2hXi1JIhHiGVa7N8qQMnvSTk5jI_A3BurEQO5Pf_z0CujWcQhWQX9IQasRA7bgomvo5nUJ/pub?gid=0&single=true&output=csv",dec=".")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+comparativo$Año=as.factor(comparativo$Año)
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+comparativo%>%filter(Seleccionadas=="Seleccionada")%>%
+  filter(Tipo=="Presidencial")%>%
+  mutate(Participación=Participación*100)%>%
+ggplot(aes(x=Año, y=Participación, group=1)) +
+  geom_line(colour = "#156c99")+
+  geom_point()+
+  ggtitle("Porcentaje de Participación Electoral en Elecciones Presidenciales")+
+  xlab("Proceso Electoral")+
+  ylab("Porcentaje de Participación")+theme_minimal()+ylim(70,100)+
+  geom_text(aes(label=paste0(round(Participación,2),"%"),vjust=-.9))
+```
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+
+cities = unique(regional_mito1$Region)
+city_plots = list()
+for(Region_ in cities) {
+  city_plots[[Region_]] =ggplot(regional_mito1 %>% filter(Region == Region_), aes(x = Eleccion, y = Participacion, group=1)) + geom_line(colour="#122c74")+ 
+  geom_point()+ theme(axis.text = element_text(size=10))+ ggtitle(Region_)+
+  theme(legend.position = "none")+
+  xlab("Elección")+ 
+  ylab("Porcentaje de Participación")+theme_minimal()+theme()+ylim(65,100)+
+    geom_text(aes(label=paste0(round(Participacion,0),"%"),vjust=-.9))
+  print(city_plots[[Region_]])}
+```
+
