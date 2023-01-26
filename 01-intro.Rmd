@@ -1,4 +1,4 @@
-# Mito 1
+# Participación Electoral
 
 <font size="6"> **El porcentaje de participación electoral ha disminuído.**</font>
 
@@ -56,28 +56,6 @@ regional_mito1 =regional_mito1%>%
 ```
 
 
-
-```{r,echo=FALSE,warning=FALSE,message=FALSE}
-library(googlesheets4)
-comparativo=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTNhvA-qt2hXi1JIhHiGVa7N8qQMnvSTk5jI_A3BurEQO5Pf_z0CujWcQhWQX9IQasRA7bgomvo5nUJ/pub?gid=0&single=true&output=csv",dec=".")
-```
-
-```{r,echo=FALSE,warning=FALSE,message=FALSE}
-comparativo$Año=as.factor(comparativo$Año)
-```
-
-```{r,echo=FALSE,warning=FALSE,message=FALSE}
-comparativo%>%filter(Seleccionadas=="Seleccionada")%>%
-  filter(Tipo=="Presidencial")%>%
-  mutate(Participación=Participación*100)%>%
-ggplot(aes(x=Año, y=Participación, group=1)) +
-  geom_line(colour = "#156c99")+
-  geom_point()+
-  ggtitle("Porcentaje de Participación Electoral en Elecciones Presidenciales")+
-  xlab("Proceso Electoral")+
-  ylab("Porcentaje de Participación")+theme_minimal()+ylim(70,100)+
-  geom_text(aes(label=paste0(round(Participación,2),"%"),vjust=-.9))
-```
 
 
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}

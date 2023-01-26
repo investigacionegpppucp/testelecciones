@@ -1,6 +1,6 @@
-# Mito 4: 
+# Organizaciones políticas ganadoras
 
-<font size="6"> **Organizaciones políticas ganadoras.**</font>
+<font size="6"> **Organizaciones políticas ganadoras predominantes son los movimientos regionales**</font>
 
 
 
@@ -28,7 +28,7 @@ regional=regional %>%
                                      TRUE ~ "NO HUBO SEGUNDA"))
 ```
 
-#### Organizaciones ganadoras según tipo de organización por elección
+## Elecciones Regionales
 
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}
 #GANADORES DE PRIMERA VUELTA
@@ -144,7 +144,7 @@ p1=ggplot(mito4_1r,aes(x= Eleccion, group = 1)) +
 gridExtra::grid.arrange(p, p1, nrow = 1)
 ```
 
-### Elecciones Provinciales
+## Elecciones Provinciales
 
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}
 provincial=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQUlZR5ccTPZzM1Uleflp7gomwKqGI3PCo4DijVl42CXoGl2WwVv7HBr0GJffWILL5b0nwkpP2XfPVF/pub?gid=2059395285&single=true&output=csv", dec = ".")
@@ -296,7 +296,7 @@ p2 = ggplot(mito4_1p,aes(x= Eleccion, group = 1)) +
 gridExtra::grid.arrange(p1, p2, nrow = 1)
 ```
 
-### Elecciones Distritales
+## Elecciones Distritales
 
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}
 distrital=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQMLHdXuz-ykbp9VmJJGhtl0vdNeeMxjgod2YrYLt9UB3RdX8tb-LEbZr2PVV41Sj384LuK1quysfNj/pub?gid=30541803&single=true&output=csv",dec=".")

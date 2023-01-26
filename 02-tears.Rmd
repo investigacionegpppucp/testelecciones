@@ -1,4 +1,4 @@
-# Mito 2: 
+# El voto no válido 
 
 <font size="6"> **El porcentaje del voto no válido supera al voto de la organización política ganadora.**</font>
 

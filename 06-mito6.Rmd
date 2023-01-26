@@ -1,0 +1,398 @@
+# Concentración Electoral: 
+
+<font size="6"> **Concentración Electoral**</font>
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+
+library(dplyr)
+library(stringr)
+library(ggplot2)
+```
+
+## Elección Regional
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(ggplot2)
+library(dplyr)
+regional=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRJdUE26KIgGmrUT8DEUzY5f3JsGlK0-eQdoTeWQw2SPrGpA_bI54jpSDnyE-hBBAoIsBRiAJzoghy-/pub?gid=1313822542&single=true&output=csv",dec=".")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+regional=regional %>%
+     mutate(Segunda_Vuelta = case_when(Eleccion == "Regional 2010" & 
+                                        Region %in% c("AMAZONAS","AYACUCHO","HUANUCO","ICA","LAMBAYEQUE","LIMA","MADRE DE DIOS","PASCO",
+                                                    "PUNO","TUMBES") ~ "HUBO SEGUNDA",
+                                     Eleccion == "Regional 2014" & 
+                                       Region %in% c("ANCASH","APURIMAC","AREQUIPA","CUSCO","HUANUCO","ICA","JUNIN","LIMA","MADRE DE DIOS","PASCO",
+                                                   "PUNO","SAN MARTIN","TACNA","TUMBES") ~ "HUBO SEGUNDA",
+                                     Eleccion == "Regional 2018" & 
+                                       Region %in% c("AMAZONAS","ANCASH","APURIMAC","AREQUIPA","AYACUCHO","CAJAMARCA","CUSCO","HUANUCO","LIMA","MADRE DE DIOS","PASCO",
+                                                   "PIURA","SAN MARTIN","TACNA","TUMBES") ~ "HUBO SEGUNDA",
+                                     TRUE ~ "NO HUBO SEGUNDA"))
+
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#CONCENTRACIÓN EN PRIMERA VUELTA REGIONAL
+
+  mito6a=regional%>% 
+    select(Region,V_validos, Org_pol, Votos, Votos_p, Eleccion, Vuelta, Segunda_Vuelta, UBIGEO)%>%
+    filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS" & Eleccion %in% c("Regional 2002","Regional 2006","Regional 2010","Regional 2014","Regional 2018","Regional 2022")&Vuelta == "Primera")%>%
+    group_by(Region, UBIGEO, Eleccion,Vuelta)%>%
+    slice (which.max (Votos))%>%
+    filter(Votos > 0)%>%
+    mutate(Posicion=ifelse(Votos>=0, "PRIMERO"))
+  
+  region=regional %>% 
+    filter(Eleccion %in%  c("Regional 2002","Regional 2006","Regional 2010","Regional 2014","Regional 2018","Regional 2022")&Vuelta == "Primera")
+  
+  mito6b=merge(region, mito6a, all = TRUE)
+
+  mito6b$Posicion[is.na(mito6b$Posicion)] = "SEGUNDO"
+  
+  mito6b = mito6b%>% 
+    select(Region,V_validos, Org_pol, Votos, Votos_p, Eleccion, Vuelta, Segunda_Vuelta, UBIGEO, Posicion)%>%
+    filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS" & Posicion != "PRIMERO" & Vuelta == "Primera")%>%
+    group_by(UBIGEO, Eleccion,Vuelta)%>%
+    slice (which.max (Votos))%>%
+    filter(Votos > 0)
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+mito6a = mito6a %>%
+  select(Region,V_validos,Votos_p,Votos,Eleccion,Posicion,Org_pol,UBIGEO)
+mito6b = mito6b %>%
+  select(Region,V_validos,Votos_p,Votos,Eleccion,Posicion,Org_pol,UBIGEO)
+
+  mito6=rbind(mito6a, mito6b)
+
+mito6 = mito6 %>%
+  group_by(Region,Eleccion)%>%
+  mutate(concentracion = sum(Votos)/V_validos)%>%
+  mutate(con_ratio=paste0(round(concentracion*100,0),"%"))%>%
+           select(Region,concentracion,con_ratio,Eleccion)%>%
+  unique()
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(stringr)
+mito6$Eleccion= as.factor(str_sub(mito6$Eleccion,10,13))
+
+a=mito6 %>%
+ filter(Region %in% c("AMAZONAS","ANCASH","APURIMAC","AREQUIPA","AYACUCHO","CAJAMARCA","CALLAO","CUSCO","HUANCAVELICA","HUANUCO","ICA","JUNIN"))
+
+b=mito6 %>%
+ filter(Region %in% c("LA LIBERTAD","LAMBAYEQUE","LIMA","LORETO","MADRE DE DIOS","MOQUEGUA","PASCO","PIURA","PUNO","SAN MARTIN","TACNA","TUMBES","UCAYALI"))
+```
+
+#### Concentración electoral en Elecciones Regionales según región
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(a, aes(x = Eleccion, y = concentracion*100, group = 1))+ 
+   geom_line(aes(y = concentracion*100), colour = "#E55555") +
+  geom_point(aes(x= Eleccion, y = concentracion*100),colour = "#E55555")+
+  geom_text(aes(y=(concentracion*100), label=con_ratio), size=2,color="black", fontface="bold", vjust =-.6)+
+  facet_wrap(~Region, ncol = 3)+
+  ggtitle("Concentración electoral")+
+  xlab("Elección Regional")+ 
+  ylab("Porcentaje (%)")+
+  theme_minimal()+
+  scale_color_manual(values = c("#E55555"),labels = c("Concentración"))+
+    theme(axis.text = element_text(size=5.5))+
+  theme(legend.text = element_text(colour="black", size=4))+
+  theme(legend.title = element_text(color = "black", size = 4))+
+  scale_y_continuous(limit = c(0,105))+theme(plot.title = element_text(size = 14,hjust = 0.5))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(b, aes(x = Eleccion, y = concentracion*100, group = 1))+ 
+   geom_line(aes(y = concentracion*100), colour = "#E55555") +
+  geom_point(aes(x= Eleccion, y = concentracion*100),colour = "#E55555")+
+  geom_text(aes(y=(concentracion*100), label=con_ratio), size=2,color="black", fontface="bold", vjust =-.6)+
+  facet_wrap(~Region, ncol = 3)+
+  ggtitle("Concentración electoral")+
+  xlab("Elección Regional")+ 
+  ylab("Porcentaje (%)")+
+  theme_minimal()+
+  scale_color_manual(values = c("#E55555"),labels = c("Concentración"))+
+    theme(axis.text = element_text(size=5.5))+
+  theme(legend.text = element_text(colour="black", size=4))+
+  theme(legend.title = element_text(color = "black", size = 4))+
+  scale_y_continuous(limit = c(0,105))+theme(plot.title = element_text(size = 14,hjust = 0.5))
+```
+
+## Elección Provincial
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+provincial=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQUlZR5ccTPZzM1Uleflp7gomwKqGI3PCo4DijVl42CXoGl2WwVv7HBr0GJffWILL5b0nwkpP2XfPVF/pub?gid=2059395285&single=true&output=csv", dec = ".")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+mito6a=provincial%>% 
+    select(Region,Provincia,V_validos, Org_pol, Votos, Votos_p, Eleccion, UBIGEO)%>%
+    filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+    group_by(UBIGEO,Eleccion)%>%
+    slice (which.max (Votos))%>%
+    filter(Votos > 0)%>%
+    mutate(Posicion=ifelse(Votos>=0, "PRIMERO"))
+  
+  mito6b=merge(provincial, mito6a, all = TRUE)
+
+  mito6b$Posicion[is.na(mito6b$Posicion)] = "SEGUNDO"
+  
+  mito6b = mito6b%>% 
+    select(Region,Provincia,V_validos, Org_pol, Votos, Votos_p, Eleccion, UBIGEO,Posicion)%>%
+    filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS" & Posicion != "PRIMERO")%>%
+    group_by(UBIGEO, Eleccion)%>%
+    slice (which.max (Votos))%>%
+    filter(Votos > 0)
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+mito6a = mito6a %>%
+  select(Region,Provincia,V_validos,Votos_p,Votos,Eleccion,Posicion,Org_pol,UBIGEO)
+mito6b = mito6b %>%
+  select(Region,Provincia,V_validos,Votos_p,Votos,Eleccion,Posicion,Org_pol,UBIGEO)
+
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ mito6=rbind(mito6a, mito6b)
+  
+  mito6$Eleccion= as.factor(stringr::str_sub(mito6$Eleccion,12,15))
+  
+mito6 = mito6 %>%
+   group_by(UBIGEO,Eleccion)%>%
+   mutate(concentracion = sum(Votos)/V_validos)%>%
+   select(Region,Provincia,concentracion,Eleccion)%>%
+   unique()%>%
+   mutate(N_concentracion = case_when(concentracion <=0.33333 ~ "BAJA",
+                                      concentracion >0.33333 & concentracion <= 0.66666 ~ "MEDIA",
+                                      TRUE ~ "ALTA"))
+mito6$N_concentracion=as.factor(mito6$N_concentracion)
+```
+
+#### Porcentaje de provincias del Perú según nivel de concentración electoral
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+general = mito6 %>%
+   group_by(Eleccion)%>%
+  count(N_concentracion)%>%
+  mutate(N_concentracion_p = n/sum(n))%>%
+  mutate(ratio=paste0(round(N_concentracion_p*100,1),"%"))
+  
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+general$N_concentracion =as.factor(general$N_concentracion)
+ggplot(data = general, aes(x = Eleccion, y= N_concentracion_p*100, group = N_concentracion,color = N_concentracion))+ 
+   geom_line(aes(color = N_concentracion),linewidth = .6) +
+  geom_point(aes(color = N_concentracion))+
+  scale_shape(solid = FALSE)+
+  ggtitle("Porcentaje de provincias según nivel de concentración electoral", subtitle = "en Elecciones Provinciales")+
+  geom_text(data= general , aes(y = N_concentracion_p*100, label=ratio), check_overlap = TRUE, color="black", fontface="bold",size = 3)+
+  xlab("Elección Provincial")+ 
+  ylab("Porcentaje (%)")+
+  labs(color="Nivel de concentración electoral")+
+  theme_minimal()+
+  scale_fill_manual(values =  c("#122c74","#55ba77","#156c99"),labels = c("Alta","Baja","Media"))+
+  theme(axis.text = element_text(size=7))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(limit = c(0,100))+
+  theme(plot.title = element_text(hjust = 0.5),plot.subtitle = element_text(hjust = 0.5))
+```
+
+#### Porcentaje de provincias según nivel de concentración electoral en Elecciones Provinciales según región
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+a=mito6 %>%
+ filter(Region %in% c("AMAZONAS","ANCASH","APURIMAC","AREQUIPA","AYACUCHO","CAJAMARCA","CALLAO","CUSCO","HUANCAVELICA","HUANUCO","ICA","JUNIN"))%>%
+  group_by(Region,Eleccion)%>%
+  count(N_concentracion)%>%
+  mutate(N_concentracion_p = n/sum(n))%>%
+  mutate(ratio=paste0(round(N_concentracion_p*100,0),"%"))
+  
+
+b=mito6 %>%
+ filter(Region %in% c("LA LIBERTAD","LAMBAYEQUE","LIMA","LORETO","MADRE DE DIOS","MOQUEGUA","PASCO","PIURA","PUNO","SAN MARTIN","TACNA","TUMBES","UCAYALI"))%>%
+  group_by(Region,Eleccion)%>%
+  count(N_concentracion)%>%
+  mutate(N_concentracion_p = n/sum(n))%>%
+  mutate(ratio=paste0(round(N_concentracion_p*100,0),"%"))
+
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(a, aes(x = Eleccion, y= N_concentracion_p*100, fill = N_concentracion , group = 1))+ 
+   geom_bar(stat = "identity") +
+    geom_text(aes(label=ratio),position = position_stack(vjust = .5),color="white", fontface="bold", size=1.5)+
+  facet_wrap(~Region, ncol = 4)+
+  ggtitle("Porcentaje de provincias por región según \n nivel de concentración electoral", subtitle = "en Elecciones Distritales")+
+  xlab("Elección Provincial")+ 
+  ylab("Porcentaje (%)")+
+  labs(fill="Nivel de concentración electora")+
+  theme_minimal()+
+  scale_fill_manual(values =  c("#122c74","#55ba77","#156c99"),labels = c("Alta","Baja","Media"))+
+  theme(axis.text = element_text(size=5))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(limit = c(0,100.5))+
+  theme(plot.title = element_text(hjust = 0.5),plot.subtitle = element_text(hjust = 0.5))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(b, aes(x = Eleccion, y= N_concentracion_p*100, fill = N_concentracion , group = 1))+ 
+   geom_bar(stat = "identity") +
+    geom_text(aes(label=ratio),position = position_stack(vjust = .5),color="white", fontface="bold", size=1.5)+
+  facet_wrap(~Region, ncol = 4)+
+  ggtitle("Porcentaje de provincias por región según \n nivel de concentración electoral", subtitle = "en Elecciones Distritales")+
+  xlab("Elección Provincial")+ 
+  ylab("Porcentaje (%)")+
+  labs(fill="Nivel de concentración electoral")+
+  theme_minimal()+
+  scale_fill_manual(values =  c("#122c74","#55ba77","#156c99"),labels = c("Alta","Baja","Media"))+
+  theme(axis.text = element_text(size=5))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(limit = c(0,100.5))+
+  theme(plot.title = element_text(hjust = 0.5),plot.subtitle = element_text(hjust = 0.5))
+```
+
+## Elección Distrital
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+distrital=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQMLHdXuz-ykbp9VmJJGhtl0vdNeeMxjgod2YrYLt9UB3RdX8tb-LEbZr2PVV41Sj384LuK1quysfNj/pub?gid=30541803&single=true&output=csv",dec=".")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+mito6a=distrital%>% 
+    select(Region,Provincia,Distrito,V_validos, Org_pol, Votos, Votos_p, Eleccion, UBIGEO)%>%
+    filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+    group_by(UBIGEO,Eleccion)%>%
+    slice (which.max (Votos))%>%
+    filter(Votos > 0)%>%
+    mutate(Posicion=ifelse(Votos>=0, "PRIMERO"))
+  
+  mito6b=merge(distrital, mito6a, all = TRUE)
+
+  mito6b$Posicion[is.na(mito6b$Posicion)] = "SEGUNDO"
+  
+  mito6b = mito6b%>% 
+    select(Region,Provincia,Distrito,V_validos, Org_pol, Votos, Votos_p, Eleccion, UBIGEO,Posicion)%>%
+    filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS" & Posicion != "PRIMERO")%>%
+    group_by(UBIGEO, Eleccion)%>%
+    slice (which.max (Votos))%>%
+    filter(Votos > 0)
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+mito6a = mito6a %>%
+  select(Region,Provincia,Distrito,V_validos,Votos_p,Votos,Eleccion,Posicion,Org_pol,UBIGEO)
+mito6b = mito6b %>%
+  select(Region,Provincia,Distrito,V_validos,Votos_p,Votos,Eleccion,Posicion,Org_pol,UBIGEO)
+
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+mito6=rbind(mito6a, mito6b)
+  mito6$Eleccion= as.factor(stringr::str_sub(mito6$Eleccion,11,14))
+  
+mito6 = mito6 %>%
+   group_by(UBIGEO,Eleccion)%>%
+   mutate(concentracion = sum(Votos)/V_validos)%>%
+   select(Region,Provincia,Distrito,concentracion,Eleccion)%>%
+   unique()%>%
+   mutate(N_concentracion = case_when(concentracion <=0.33333 ~ "BAJA",
+                                      concentracion >0.33333 & concentracion <= 0.66666 ~ "MEDIA",
+                                      TRUE ~ "ALTA"))
+mito6$N_concentracion=as.factor(mito6$N_concentracion)
+```
+
+#### Porcentaje de distritos del Perú según nivel de concentración electoral
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+general = mito6 %>%
+   group_by(Eleccion)%>%
+  count(N_concentracion)%>%
+  mutate(N_concentracion_p = n/sum(n))%>%
+  mutate(ratio=paste0(round(N_concentracion_p*100,1),"%"))
+  
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+general$N_concentracion =as.factor(general$N_concentracion)
+ggplot(data = general, aes(x = Eleccion, y= N_concentracion_p*100, group = N_concentracion,color = N_concentracion))+ 
+   geom_line(aes(color = N_concentracion),linewidth = .6) +
+  geom_point(aes(color = N_concentracion))+
+  scale_shape(solid = FALSE)+
+  ggtitle("Porcentaje de distritos según nivel de concentración electoral", subtitle = "en Elecciones Distritales")+
+  geom_text(data= general , aes(y = N_concentracion_p*100, label=ratio), check_overlap = TRUE, color="black", fontface="bold",size = 3)+
+  xlab("Elección Distrital")+ 
+  ylab("Porcentaje (%)")+
+  labs(color="Nivel de concentración electoral")+
+  theme_minimal()+
+  scale_fill_manual(values =  c("#122c74","#55ba77","#156c99"),labels = c("Alta","Baja","Media"))+
+  theme(axis.text = element_text(size=7))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(limit = c(0,100))+
+  theme(plot.title = element_text(hjust = 0.5),plot.subtitle = element_text(hjust = 0.5))
+```
+
+#### Porcentaje de distritos según nivel de concentración electoral en Elecciones Distritales según región
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+a=mito6 %>%
+ filter(Region %in% c("AMAZONAS","ANCASH","APURIMAC","AREQUIPA","AYACUCHO","CAJAMARCA","CALLAO","CUSCO","HUANCAVELICA","HUANUCO","ICA","JUNIN"))%>%
+  group_by(Region,Eleccion)%>%
+  count(N_concentracion)%>%
+  mutate(N_concentracion_p = n/sum(n))%>%
+  mutate(ratio=paste0(round(N_concentracion_p*100,0),"%"))
+  
+
+b=mito6 %>%
+ filter(Region %in% c("LA LIBERTAD","LAMBAYEQUE","LIMA","LORETO","MADRE DE DIOS","MOQUEGUA","PASCO","PIURA","PUNO","SAN MARTIN","TACNA","TUMBES","UCAYALI"))%>%
+  group_by(Region,Eleccion)%>%
+  count(N_concentracion)%>%
+  mutate(N_concentracion_p = n/sum(n))%>%
+  mutate(ratio=paste0(round(N_concentracion_p*100,0),"%"))
+
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(a, aes(x = Eleccion, y= N_concentracion_p*100, fill = forcats::fct_rev(N_concentracion) , group = 1))+ 
+   geom_bar(stat = "identity") +
+    geom_text(aes(label=ratio),position = position_stack(vjust = .5),color="white", fontface="bold", size=1.5)+
+  facet_wrap(~Region, ncol = 4)+
+  ggtitle("Porcentaje de distritos por región según \n nivel de concentración electoral", subtitle = "en Elecciones Distritales")+
+  xlab("Elección Distrital")+ 
+  ylab("Porcentaje (%)")+
+  labs(fill="Nivel de concentración electoral")+
+  theme_minimal()+
+  scale_fill_manual(values =  c("#122c74","#55ba77","#156c99"),labels = c("Alta","Baja","Media"))+
+  theme(axis.text = element_text(size=5))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(limit = c(0,100.5))+
+  theme(plot.title = element_text(hjust = 0.5),plot.subtitle = element_text(hjust = 0.5))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(b, aes(x = Eleccion, y= N_concentracion_p*100, fill = forcats::fct_rev(N_concentracion) , group = 1))+ 
+   geom_bar(stat = "identity") +
+    geom_text(aes(label=ratio),position = position_stack(vjust = .5),color="white", fontface="bold", size=1.5,check_overlap = TRUE )+
+  facet_wrap(~Region, ncol = 4)+
+  ggtitle("Porcentaje de distritos por región según \n nivel de concentración electoral", subtitle = "en Elecciones Distritales")+
+  xlab("Elección Distrital")+ 
+  ylab("Porcentaje (%)")+
+  labs(fill="Nivel de concentración electoral")+
+  theme_minimal()+
+  scale_fill_manual(values =  c("#122c74","#55ba77","#156c99"),labels = c("Alta","Baja","Media"))+
+  theme(axis.text = element_text(size=5))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(limit = c(0,100.5))+
+  theme(plot.title = element_text(hjust = 0.5),plot.subtitle = element_text(hjust = 0.5))
+```

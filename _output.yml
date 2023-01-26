@@ -5,4 +5,4 @@ bookdown::gitbook:
       before: |
         <li><a href="./">Mitos y verdades de las Elecciones Subnacionales en el Perú</a></li>
       after: |
-        <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+        <li><a href="https://gobierno.pucp.edu.pe" target="blank">Publicado por la Escuela de Gobierno y Políticas Públicas-PUCP</a></li>
