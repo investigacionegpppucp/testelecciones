@@ -1,0 +1,617 @@
+# Participación de Mujeres: 
+
+<font size="6"> **Competencia Electoral**</font>
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+
+library(dplyr)
+library(stringr)
+library(ggplot2)
+```
+
+
+**La competencia electoral ha incrementado.**
+
+## Elecciones Regionales
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(googlesheets4)
+regional=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRJdUE26KIgGmrUT8DEUzY5f3JsGlK0-eQdoTeWQw2SPrGpA_bI54jpSDnyE-hBBAoIsBRiAJzoghy-/pub?gid=1313822542&single=true&output=csv",dec=".")
+library(dplyr)
+library(ggplot2)
+library(rio)
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5a=regional%>% 
+  filter(Vuelta=="Primera")%>%
+  filter(Eleccion=="Regional 2002"|Eleccion=="Regional 2006"|Eleccion=="Regional 2010"|Eleccion=="Regional 2014"|Eleccion=="Regional 2018"|Eleccion=="Regional 2022")%>%
+  select(Region,Org_pol, Votos_p, Eleccion)%>%
+  filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+  group_by(Region,Eleccion)%>%
+  slice (which.max (Votos_p))%>%
+  mutate(Posicion=c("PRIMERO"))
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5b=merge(x = regional, y = regional_mito5a, all = TRUE)
+regional_mito5b$Posicion[is.na(regional_mito5b$Posicion)] = "SEGUNDO"
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5b=regional_mito5b%>% 
+  filter(Vuelta=="Primera")%>%
+  filter(Eleccion=="Regional 2002"|Eleccion=="Regional 2006"|Eleccion=="Regional 2010"|Eleccion=="Regional 2014"|Eleccion=="Regional 2018"|Eleccion=="Regional 2022")%>%
+  select(Region,Org_pol, Votos_p, Eleccion, Posicion)%>%
+  filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+  filter(Posicion != "PRIMERO")%>%
+  group_by(Region,Eleccion)%>%
+  slice (which.max (Votos_p))
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5=cbind(regional_mito5a,regional_mito5b) #Unir columnas 
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+colnames(regional_mito5)[1]="Region"
+colnames(regional_mito5)[2]="Org_pol_primera"
+colnames(regional_mito5)[3]="Votos_p_primera"
+colnames(regional_mito5)[7]="Org_pol_segunda"
+colnames(regional_mito5)[8]="Votos_p_segunda"
+colnames(regional_mito5)[9]="Eleccion"
+regional_mito5=regional_mito5[-c(4,5,6,10)] #Eliminar columnas
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5=regional_mito5%>%
+  mutate(Competencia=Votos_p_primera-Votos_p_segunda)%>%
+  mutate(Nivel= ifelse(0.1>=Competencia, "1_ALTO", ifelse(0.2>=Competencia&Competencia>0.1, "2_MEDIA", "3_BAJA")))%>%
+  mutate(grupo= ifelse(Region=="AMAZONAS", "BAJAN", ifelse(Region=="ANCASH", "BAJAN", ifelse(Region=="APURIMAC", "BAJAN", ifelse(Region=="AREQUIPA", "BAJAN", ifelse(Region=="AYACUCHO", "BAJAN", ifelse(Region=="CUSCO", "BAJAN", ifelse( Region=="HUANUCO", "BAJAN",ifelse( Region=="LIMA", "BAJAN", ifelse(Region=="LORETO", "BAJAN", ifelse(Region=="MADRE DE DIOS", "BAJAN", ifelse(Region=="PIURA", "BAJAN", ifelse(Region=="SAN MARTIN", "BAJAN", ifelse(Region=="TACNA","BAJAN", ifelse(Region=="TUMBES", "BAJAN", "SUBEN")))))))))))))))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(car)
+regional_mito5$Eleccion<-recode(regional_mito5$Eleccion, "'Regional 2002'='2002'; 'Regional 2006'='2006'; 'Regional 2010'='2010'; 'Regional 2014'='2014'; 'Regional 2018'='2018';'Regional 2022'='2022'")
+regional_mito5$Eleccion=as.factor(regional_mito5$Eleccion)
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(regional_mito5, aes(x = Eleccion, fill = Nivel)) + 
+  geom_bar()+
+  geom_text(aes(label=..count..), stat='count',position=position_stack(0.5),color="white", fontface="bold")+
+  ggtitle("Competencia electoral en Elecciones Regionales",  subtitle = "Diferencia de votos válidos entre el primer y segundo lugar")+
+  xlab("Elección Regional")+ 
+  ylab("Número de regiones")+
+  scale_fill_manual(values = c("#156C99","#E55555", "#55BA77"), labels = c("Alto (Diferencia entre 0% y 10%)", "Medio (Diferencia entre 10% y 20%) ","Bajo (Diferencia mayor de 20%)"))+
+  labs(fill = "Nivel de competencia electoral")+theme_minimal()
+#ggsave("5_regional.png")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+table(regional_mito5$Eleccion, regional_mito5$Nivel)
+```
+
++-------------------+----------------------+-----------------------+----------------------+------------+
+| **Elección**      | **Competencia Alta** | **Competencia Media** | **Competencia Baja** | **Total**  |
++:=================:+:====================:+:=====================:+:====================:+:==========:+
+| **Regional 2002** | 21                   | 3                     | 1                    | 25         |
++-------------------+----------------------+-----------------------+----------------------+------------+
+| **Regional 2006** | 14                   | 8                     | 3                    | 25         |
++-------------------+----------------------+-----------------------+----------------------+------------+
+| **Regional 2010** | 15                   | 9                     | 1                    | 25         |
++-------------------+----------------------+-----------------------+----------------------+------------+
+| **Regional 2014** | 17                   | 7                     | 1                    | 25         |
++-------------------+----------------------+-----------------------+----------------------+------------+
+| **Regional 2018** | 17                   | 5                     | 3                    | 25         |
++-------------------+----------------------+-----------------------+----------------------+------------+
+| **Regional 2022** | 17                   | 7                     | 1                    | 25         |
++-------------------+----------------------+-----------------------+----------------------+------------+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#export(regional_mito5,"regional_mito5.xlsx")
+```
+
+**Grafico de líneas: Competencia en Elecciones regionales por región**
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5.1=regional_mito5 %>%
+ filter(Region %in% c("AMAZONAS","ANCASH","APURIMAC","AREQUIPA","AYACUCHO","CAJAMARCA","CALLAO","CUSCO","HUANCAVELICA","HUANUCO","ICA","JUNIN"))
+
+regional_mito5.2=regional_mito5 %>%
+ filter(Region %in% c("LA LIBERTAD","LAMBAYEQUE","LIMA","LORETO","MADRE DE DIOS","MOQUEGUA","PASCO","PIURA","PUNO","SAN MARTIN","TACNA","TUMBES","UCAYALI"))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(data = regional_mito5.1, aes(x = Eleccion, y = Competencia, group = Region))+ 
+  geom_line(aes(color=grupo)) +
+  geom_point(size = 0.5, shape = 21)+
+  facet_wrap(~Region, ncol = 3)+
+  ggtitle("Competencia electoral en Elecciones Regionales por región", subtitle = "Diferencia de votos válidos entre el primer y segundo lugar")+
+  xlab("Elección")+ 
+  ylab("Diferencia porcentual")+theme_minimal()+
+  scale_color_manual(values =  c("#156C99","#E55555"), labels = c("Menor competencia","Mayor competencia"))+
+  labs(color = "Tendencia al 2022")+
+  theme(axis.text = element_text(size=7))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limit = c(0,0.4))+
+  geom_text(aes(label=paste0(round(Competencia*100,1),"%"),vjust=-.9),size=1.8)
+
+#ggsave("5_regional_regionA.png")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(data = regional_mito5.2, aes(x = Eleccion, y = Competencia, group = Region))+ 
+  geom_line(aes(color=grupo)) +
+  geom_point(size = 0.5, shape = 21)+
+  facet_wrap(~Region, ncol = 4)+
+  ggtitle("Competencia electoral en Elecciones Regionales por región", subtitle = "Diferencia de votos válidos entre el primer y segundo lugar")+
+  xlab("Elección")+ 
+  ylab("Diferencia porcentual")+theme_minimal()+
+  scale_color_manual(values =  c("#156C99","#E55555"), labels = c("Menor competencia","Mayor competencia"))+
+  labs(color = "Tendencia al 2022")+
+  theme(axis.text = element_text(size=5))+
+  theme(legend.text = element_text(colour="black", size=7))+
+  theme(legend.title = element_text(color = "black", size = 7))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limit = c(0,0.4))+
+  geom_text(aes(label=paste0(round(Competencia*100,1),"%"),vjust=-.9),size=1.8)
+
+#ggsave("5_regional_regionB.png")
+```
+
+**Segunda vuelta**
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5_sv=regional%>% 
+  filter(Vuelta=="Segunda")%>%
+  filter(Eleccion=="Regional 2010"|Eleccion=="Regional 2014"|Eleccion=="Regional 2018"|Eleccion=="Regional 2022")%>%
+  select(Region,Org_pol, Votos_p, Eleccion)%>%
+  filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS") %>% 
+  group_by(Region, Eleccion) %>%
+  filter (Votos_p == max (Votos_p, na.rm = TRUE)) %>% 
+  rename(c(Org_pol_1="Org_pol", Votos_p_1="Votos_p")) %>% 
+  mutate(Votos_p_2=1-Votos_p_1) %>% 
+  mutate(Competencia=Votos_p_1-Votos_p_2) %>% 
+  mutate(Nivel= ifelse(0.1>=Competencia, "1_ALTO", ifelse(0.2>=Competencia&Competencia>0.1, "2_MEDIA", "3_BAJA")))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(car)
+regional_mito5_sv$Eleccion<-recode(regional_mito5_sv$Eleccion, "'Regional 2010'='2010'; 'Regional 2014'='2014'; 'Regional 2018'='2018';'Regional 2022'='2022'")
+regional_mito5_sv$Eleccion=as.factor(regional_mito5_sv$Eleccion)
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(regional_mito5_sv, aes(x = Eleccion, fill = Nivel)) + 
+  geom_bar()+
+  geom_text(aes(label=..count..), stat='count',position=position_stack(0.5),color="white", fontface="bold")+
+  ggtitle("Competencia electoral en Segunda Vuelta de Elecciones Regionales",  subtitle = "Diferencia de votos válidos entre el primer y segundo lugar")+
+  xlab("Segunda Elección Regional")+ 
+  ylab("Número de regiones")+
+  scale_fill_manual(values = c("#156C99","#E55555", "#55BA77"), labels = c("Alto (Diferencia entre 0% y 10%)", "Medio (Diferencia entre 10% y 20%) ","Bajo (Diferencia mayor de 20%)"))+
+  labs(fill = "Nivel de competencia electoral")+theme_minimal()
+#ggsave("5_regional_sv.png")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#table(regional_mito5_sv$Eleccion, regional_mito5_sv$Nivel)
+```
+
++---------------------------+----------------------+-----------------------+----------------------+-------------+
+| **Elección**              | **Competencia Alta** | **Competencia Media** | **Competencia Baja** | **Total**   |
++:=========================:+:====================:+:=====================:+:====================:+:===========:+
+| **Segunda Regional 2010** | 7                    | 2                     | 1                    | 10          |
++---------------------------+----------------------+-----------------------+----------------------+-------------+
+| **Segunda Regional 2014** | 8                    | 3                     | 3                    | 14          |
++---------------------------+----------------------+-----------------------+----------------------+-------------+
+| **Segunda Regional 2018** | 2                    | 6                     | 7                    | 15          |
++---------------------------+----------------------+-----------------------+----------------------+-------------+
+| **Segunda Regional 2022** | 3                    | 4                     | 2                    | 9           |
++---------------------------+----------------------+-----------------------+----------------------+-------------+
+
+**Comparativo Competencia Primera y segunda vuelta**
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5_comparativo=merge(x = regional_mito5, y = regional_mito5_sv, by= c("Region", "Eleccion"), all = TRUE)
+regional_mito5_comparativo=regional_mito5_comparativo[complete.cases(regional_mito5_comparativo[ , 1:14]),]  
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+regional_mito5_comparativo=regional_mito5_comparativo%>% 
+  rename(c(Nivel_1v="Nivel.x", Nivel_2v="Nivel.y")) %>% 
+  select(Region ,Eleccion, Nivel_1v, Nivel_2v)
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(data = regional_mito5_comparativo, aes(Nivel_1v, fill = Nivel_2v))+ 
+  geom_bar(aes())+
+  geom_text(aes(label=..count..), stat='count',position=position_stack(0.5),color="white", fontface="bold")+
+  facet_wrap(~Eleccion, ncol = 4)+
+  ggtitle("Competencia electoral en Primera y Segunda vuelta \n en Elecciones Regionales por año", subtitle = "Diferencia de votos válidos entre el primer y segundo lugar")+
+  xlab("Nivel de competencia electoral en Primera vuelta")+ 
+  ylab("Número de regiones")+
+  scale_x_discrete(labels = c("1_ALTO" = "Alto","2_MEDIA" = "Medio"))+
+  scale_fill_manual(values = c("#156C99","#E55555", "#55BA77"), labels = c("Alto (Diferencia entre 0% y 10%)", "Medio (Diferencia entre 10% y 20%) ","Bajo (Diferencia mayor de 20%)"))+
+  labs(fill = "Nivel de competencia electoral en Segunda vuelta")+theme_minimal()+
+  theme(legend.text = element_text(colour="black", size=8))+
+  theme(legend.title = element_text(color = "black", size = 8))
+#ggsave("5_regional_comparativo.png")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#regional_mito5_comparativo %>% group_by(Eleccion, Nivel_1v, Nivel_2v) %>% summarise(n=n())
+```
+
++-------------------+--------------------------------+--------------------------------+--------------+
+| **Elección**      | **Competencia Primera vuelta** | **Competencia Segunda vuelta** | **Regiones** |
++:=================:+:==============================:+:==============================:+:============:+
+| **Regional 2010** | Nivel Alto                     | Nivel Alto                     | 6            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Medio                    | 2            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Bajo                     | 1            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   | Nivel Medio                    | Nivel Alto                     | 1            |
++-------------------+--------------------------------+--------------------------------+--------------+
+| **Regional 2014** | Nivel Alto                     | Nivel Alto                     | 7            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Medio                    | 2            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Bajo                     | 2            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   | Nivel Medio                    | Nivel Alto                     | 1            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Medio                    | 1            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Bajo                     | 1            |
++-------------------+--------------------------------+--------------------------------+--------------+
+| **Regional 2018** | Nivel Alto                     | Nivel Alto                     | 2            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Medio                    | 6            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Bajo                     | 7            |
++-------------------+--------------------------------+--------------------------------+--------------+
+| **Regional 2022** | Nivel Alto                     | Nivel Alto                     | 3            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Medio                    | 4            |
++-------------------+--------------------------------+--------------------------------+--------------+
+|                   |                                | Nivel Bajo                     | 2            |
++-------------------+--------------------------------+--------------------------------+--------------+
+
++------------------------------------------+--------------------------------------------------+--------------+----------------+:---------:+
+|                                          | **Competencia - Segunda Elección Regional 2010** |              |                |           |
++------------------------------------------+--------------------------------------------------+--------------+----------------+-----------+
+| **Competencia - Elección Regional 2010** | Nivel Alto                                       | Nivel Medio  | Nivel Bajo     | **Total** |
++------------------------------------------+--------------------------------------------------+--------------+----------------+-----------+
+| Nivel Alto                               | -   Amazonas                                     | -   Ayacucho | -   Lambayeque | 9         |
+|                                          |                                                  |              |                |           |
+|                                          | -   Huánuco                                      | -   Pasco    |     (1)        |           |
+|                                          |                                                  |              |                |           |
+|                                          | -   Ica                                          | (2)          |                |           |
+|                                          |                                                  |              |                |           |
+|                                          | -   Madre de Dios                                |              |                |           |
+|                                          |                                                  |              |                |           |
+|                                          | -   Puno                                         |              |                |           |
+|                                          |                                                  |              |                |           |
+|                                          | -   Tumbes                                       |              |                |           |
+|                                          |                                                  |              |                |           |
+|                                          |     (6)                                          |              |                |           |
++------------------------------------------+--------------------------------------------------+--------------+----------------+-----------+
+| Nivel Medio                              | -   Lima                                         |              |                | 1         |
+|                                          |                                                  |              |                |           |
+|                                          |     (1)                                          |              |                |           |
++------------------------------------------+--------------------------------------------------+--------------+----------------+-----------+
+| **Total**                                | 7                                                | 2            | 1              | 10        |
++------------------------------------------+--------------------------------------------------+--------------+----------------+-----------+
+
++------------------------------------------+--------------------------------------------------+--------------+-------------------+-----------+
+|                                          | **Competencia - Segunda Eleccion Regional 2014** |              |                   |           |
++==========================================+:================================================:+:============:+:=================:+:=========:+
+| **Competencia - Eleccion Regional 2014** | Nivel Alto                                       | Nivel Medio  | Nivel Bajo        | **Total** |
++------------------------------------------+--------------------------------------------------+--------------+-------------------+-----------+
+| Nivel Alto                               | -   Arequipa                                     | -   Lima     | -   Áncash        | 11        |
+|                                          |                                                  |              |                   |           |
+|                                          | -   Ica                                          | -   Tacna    | -   Madre de Dios |           |
+|                                          |                                                  |              |                   |           |
+|                                          | -   Junín                                        | (2)          | (2)               |           |
+|                                          |                                                  |              |                   |           |
+|                                          | -   Pasco                                        |              |                   |           |
+|                                          |                                                  |              |                   |           |
+|                                          | -   Puno                                         |              |                   |           |
+|                                          |                                                  |              |                   |           |
+|                                          | -   San Martín                                   |              |                   |           |
+|                                          |                                                  |              |                   |           |
+|                                          | -   Tumbes                                       |              |                   |           |
+|                                          |                                                  |              |                   |           |
+|                                          |     (7)                                          |              |                   |           |
++------------------------------------------+--------------------------------------------------+--------------+-------------------+-----------+
+| Nivel Medio                              | -   Cusco                                        | -   Apurímac | -   Huánuco       | 3         |
+|                                          |                                                  |              |                   |           |
+|                                          |     (1)                                          | (1)          | (1)               |           |
++------------------------------------------+--------------------------------------------------+--------------+-------------------+-----------+
+| **Total**                                | 8                                                | 3            | 3                 | 14        |
++------------------------------------------+--------------------------------------------------+--------------+-------------------+-----------+
+
++------------------------------------------+--------------------------------------------------+-------------------+---------------+-----------+
+|                                          | **Competencia - Segunda Eleccion Regional 2018** |                   |               |           |
++==========================================+:================================================:+:=================:+:=============:+:=========:+
+| **Competencia - Eleccion Regional 2018** | Nivel Alto                                       | Nivel Medio       | Nivel Bajo    | **Total** |
++------------------------------------------+--------------------------------------------------+-------------------+---------------+-----------+
+| Nivel Alto                               | -   San Martín                                   | -   Amazonas      | -   Apurímac  | 15        |
+|                                          |                                                  |                   |               |           |
+|                                          | -   Tumbes                                       | -   Áncash        | -   Cajamarca |           |
+|                                          |                                                  |                   |               |           |
+|                                          | (2)                                              | -   Arequipa      | -   Cusco     |           |
+|                                          |                                                  |                   |               |           |
+|                                          |                                                  | -   Ayacucho      | -   Lima      |           |
+|                                          |                                                  |                   |               |           |
+|                                          |                                                  | -   Huánuco       | -   Pasco     |           |
+|                                          |                                                  |                   |               |           |
+|                                          |                                                  | -   Madre de Dios | -   Piura     |           |
+|                                          |                                                  |                   |               |           |
+|                                          |                                                  | (6)               | -   Tacna     |           |
+|                                          |                                                  |                   |               |           |
+|                                          |                                                  |                   | (7)           |           |
++------------------------------------------+--------------------------------------------------+-------------------+---------------+-----------+
+
++------------------------------------------+--------------------------------------------------+----------------+---------------+-----------+
+|                                          | **Competencia - Segunda Eleccion Regional 2022** |                |               |           |
++==========================================+:================================================:+:==============:+:=============:+:=========:+
+| **Competencia - Eleccion Regional 2022** | Nivel Alto                                       | Nivel Medio    | Nivel Bajo    | **Total** |
++------------------------------------------+--------------------------------------------------+----------------+---------------+-----------+
+| Nivel Alto                               | -   Amazonas                                     | -   Cusco      | -   Cajamarca | 9         |
+|                                          |                                                  |                |               |           |
+|                                          | -   Moquegua                                     | -   Lambayeque | -   Callao    |           |
+|                                          |                                                  |                |               |           |
+|                                          | -   Pasco                                        | -   Lima       | (2)           |           |
+|                                          |                                                  |                |               |           |
+|                                          | (3)                                              | -   Piura      |               |           |
+|                                          |                                                  |                |               |           |
+|                                          |                                                  | (4)            |               |           |
++------------------------------------------+--------------------------------------------------+----------------+---------------+-----------+
+
+## Elecciones Provinciales
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+provincial=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQUlZR5ccTPZzM1Uleflp7gomwKqGI3PCo4DijVl42CXoGl2WwVv7HBr0GJffWILL5b0nwkpP2XfPVF/pub?gid=2059395285&single=true&output=csv", dec = ".")
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+provincial_mito5a=provincial%>% 
+  select(Region,Provincia, Org_pol, Votos_p, Eleccion, UBIGEO)%>%
+  filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+  group_by(Region, Provincia, Eleccion)%>%
+  slice (which.max (Votos_p))%>%
+  mutate(Posicion=c("PRIMERO"))
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+provincial_mito5b=merge(x = provincial, y = provincial_mito5a, all = TRUE)
+provincial_mito5b$Posicion[is.na(provincial_mito5b$Posicion)] = "SEGUNDO"
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+provincial_mito5b=provincial_mito5b%>% 
+  select(Region,Provincia,Org_pol, Votos_p, Eleccion,Posicion, UBIGEO)%>%
+  filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+  filter(Posicion != "PRIMERO")%>%
+  group_by(Region,Provincia, Eleccion)%>%
+  slice (which.max (Votos_p))
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+provincial_mito5=cbind(provincial_mito5a,provincial_mito5b) #Unir columnas 
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+colnames(provincial_mito5)[1]="Region"
+colnames(provincial_mito5)[2]="Provincia"
+colnames(provincial_mito5)[3]="Org_pol_primera"
+colnames(provincial_mito5)[4]="Votos_p_primera"
+colnames(provincial_mito5)[10]="Org_pol_segunda"
+colnames(provincial_mito5)[11]="Votos_p_segunda"
+colnames(provincial_mito5)[12]="Eleccion"
+colnames(provincial_mito5)[14]="UBIGEO"
+provincial_mito5=provincial_mito5[-c(5,6,7,8,9,13)] #Eliminar columnas
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+provincial_mito5=provincial_mito5%>%
+  mutate(Competencia=Votos_p_primera-Votos_p_segunda)%>%
+  mutate(Nivel= ifelse(0.1>=Competencia, "1_ALTO", ifelse(0.2>=Competencia&Competencia>0.1, "2_MEDIA", "3_BAJA")))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(car)
+provincial_mito5$Eleccion<-recode(provincial_mito5$Eleccion, "'Provincial 2002'='2002'; 'Provincial 2006'='2006'; 'Provincial 2010'='2010'; 'Provincial 2014'='2014'; 'Provincial 2018'='2018';'Provincial 2022'='2022'")
+provincial_mito5$Eleccion=as.factor(provincial_mito5$Eleccion)
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+provincial_mito5_graf=provincial_mito5 %>% 
+  select(Eleccion, Provincia, Nivel) %>% 
+  group_by(Eleccion, Nivel) %>% 
+  summarise(n=n()) %>% 
+  mutate(ratio=scales::percent(n/sum(n)))
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(provincial_mito5_graf, aes(x = Eleccion, y=n, fill = Nivel)) + 
+  geom_bar(stat="identity",position = "fill")+
+  geom_text(aes(label=ratio),position = position_fill(vjust=0.5),color="white", fontface="bold")+
+  ggtitle("Competencia electoral en Elecciones Provinciales",  subtitle = "Diferencia de votos válidos entre el primer y segundo lugar")+
+  xlab("Elección Provincial")+ 
+  ylab("Provincias (%)")+
+  scale_fill_manual(values = c("#156C99","#E55555", "#55BA77"), labels = c("Alto (Diferencia entre 0% y 10%)", "Medio (Diferencia entre 10% y 20%) ","Bajo (Diferencia mayor de 20%)"))+
+  labs(fill = "Nivel de competencia electoral")+theme_minimal()+
+  scale_y_continuous(labels = scales::percent)
+#ggsave("5_provincial.png")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#table(provincial_mito5$Eleccion, provincial_mito5$Nivel)
+```
+
++---------------------+----------------------+-----------------------+----------------------+------------+
+| **Elección**        | **Competencia Alta** | **Competencia Media** | **Competencia Baja** | **Total**  |
++:===================:+:====================:+:=====================:+:====================:+:==========:+
+| **Provincial 2002** | 153                  | 31                    | 10                   | 194        |
++---------------------+----------------------+-----------------------+----------------------+------------+
+| **Provincial 2006** | 142                  | 44                    | 9                    | 195        |
++---------------------+----------------------+-----------------------+----------------------+------------+
+| **Provincial 2010** | 150                  | 36                    | 9                    | 195        |
++---------------------+----------------------+-----------------------+----------------------+------------+
+| **Provincial 2014** | 147                  | 37                    | 11                   | 195        |
++---------------------+----------------------+-----------------------+----------------------+------------+
+| **Provincial 2018** | 148                  | 40                    | 8                    | 196        |
++---------------------+----------------------+-----------------------+----------------------+------------+
+| **Provincial 2022** | 139                  | 43                    | 14                   | 196        |
++---------------------+----------------------+-----------------------+----------------------+------------+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#round(prop.table(table(provincial_mito5$Eleccion, provincial_mito5$Nivel),1),2)
+```
+
++---------------------+----------------------+-----------------------+----------------------+
+| **Elección**        | **Competencia Alta** | **Competencia Media** | **Competencia Baja** |
++:===================:+:====================:+:=====================:+:====================:+
+| **Provincial 2002** | 79%                  | 16%                   | 5%                   |
++---------------------+----------------------+-----------------------+----------------------+
+| **Provincial 2006** | 73%                  | 23%                   | 5%                   |
++---------------------+----------------------+-----------------------+----------------------+
+| **Provincial 2010** | 77%                  | 18%                   | 5%                   |
++---------------------+----------------------+-----------------------+----------------------+
+| **Provincial 2014** | 75%                  | 19%                   | 6%                   |
++---------------------+----------------------+-----------------------+----------------------+
+| **Provincial 2018** | 76%                  | 20%                   | 4%                   |
++---------------------+----------------------+-----------------------+----------------------+
+| **Provincial 2022** | 71%                  | 22%                   | 7%                   |
++---------------------+----------------------+-----------------------+----------------------+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#export(provincial_mito5,"provincial_mito5.xlsx")
+```
+
+## Elecciones Distritales
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+distrital=read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQMLHdXuz-ykbp9VmJJGhtl0vdNeeMxjgod2YrYLt9UB3RdX8tb-LEbZr2PVV41Sj384LuK1quysfNj/pub?output=csv", dec='.')
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+distrital_mito5a=distrital%>% 
+  select(Region,Provincia, Distrito, Org_pol, Votos_p, Eleccion, UBIGEO)%>%
+  filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+  group_by(Region, Provincia, Distrito, Eleccion)%>%
+  slice (which.max (Votos_p))%>%
+  mutate(Posicion=c("PRIMERO"))
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+distrital_mito5b=merge(x = distrital, y = distrital_mito5a, all = TRUE)
+distrital_mito5b$Posicion[is.na(distrital_mito5b$Posicion)] = "SEGUNDO"
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+distrital_mito5b=distrital_mito5b%>% 
+  select(Region,Provincia, Distrito, Org_pol, Votos_p, Eleccion,Posicion, UBIGEO)%>%
+  filter(Org_pol != "VOTOS EN BLANCO" & Org_pol != "VOTOS NULOS")%>%
+  filter(Posicion != "PRIMERO")%>%
+  group_by(Region,Provincia, Distrito, Eleccion)%>%
+  slice (which.max (Votos_p))%>%
+  rename(c(Org_pol_segunda="Org_pol", Votos_p_segunda="Votos_p"))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+distrital_mito5=merge(x=distrital_mito5a, y=distrital_mito5b, by= c("Region", "Provincia", "Distrito", "Eleccion"), all = TRUE)
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+colnames(distrital_mito5)[5]="Org_pol_primera"
+colnames(distrital_mito5)[6]="Votos_p_primera"
+colnames(distrital_mito5)[12]="UBIGEO"
+distrital_mito5=distrital_mito5[-c(7,8,11)] #Eliminar columnas
+distrital_mito5$Votos_p_segunda[is.na(distrital_mito5$Votos_p_segunda)] = 0
+```
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+distrital_mito5=distrital_mito5%>%
+  mutate(Competencia=Votos_p_primera-Votos_p_segunda)%>%
+  mutate(Nivel= ifelse(0.1>=Competencia, "1_ALTO", ifelse(0.2>=Competencia&Competencia>0.1, "2_MEDIA", "3_BAJA")))
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(car)
+distrital_mito5$Eleccion<-recode(distrital_mito5$Eleccion, "'Distrital 2002'='2002'; 'Distrital 2006'='2006'; 'Distrital 2010'='2010'; 'Distrital 2014'='2014'; 'Distrital 2018'='2018';'Distrital 2022'='2022'")
+distrital_mito5$Eleccion=as.factor(distrital_mito5$Eleccion)
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+distrital_mito5_graf=distrital_mito5 %>% 
+  select(Eleccion, Distrito, Nivel) %>% 
+  group_by(Eleccion, Nivel) %>% 
+  summarise(n=n()) %>% 
+  mutate(ratio=scales::percent(n/sum(n)))
+```
+
+
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(distrital_mito5_graf, aes(x = Eleccion, y=n, fill = Nivel)) + 
+  geom_bar(stat="identity", position = "fill")+
+  geom_text(aes(label=ratio),position = position_fill(vjust=0.5),color="white", fontface="bold")+
+  ggtitle("Competencia electoral en Elecciones Distritales",  subtitle = "Diferencia de votos válidos entre el primer y segundo lugar")+
+  xlab("Elección Distrital")+ 
+  ylab("Distritos (%)")+
+  scale_fill_manual(values = c("#156C99","#E55555", "#55BA77"), labels = c("Alto (Diferencia entre 0% y 10%)", "Medio (Diferencia entre 10% y 20%) ","Bajo (Diferencia mayor de 20%)","Elecciones Anuladas"))+
+  labs(fill = "Nivel de competencia electoral")+theme_minimal()+
+  scale_y_continuous(labels = scales::percent)
+#ggsave("5_distrital.png")
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#table(distrital_mito5$Eleccion, distrital_mito5$Nivel)
+```
+
++--------------------+----------------------+-----------------------+----------------------+------------+
+| **Elección**       | **Competencia Alta** | **Competencia Media** | **Competencia Baja** | **Total**  |
++:==================:+:====================:+:=====================:+:====================:+:==========:+
+| **Distrital 2002** | 1131                 | 356                   | 148                  | 1635       |
++--------------------+----------------------+-----------------------+----------------------+------------+
+| **Distrital 2006** | 1083                 | 377                   | 177                  | 1637       |
++--------------------+----------------------+-----------------------+----------------------+------------+
+| **Distrital 2010** | 1060                 | 395                   | 184                  | 1639       |
++--------------------+----------------------+-----------------------+----------------------+------------+
+| **Distrital 2014** | 1038                 | 424                   | 185                  | 1647       |
++--------------------+----------------------+-----------------------+----------------------+------------+
+| **Distrital 2018** | 1058                 | 438                   | 185                  | 1678       |
++--------------------+----------------------+-----------------------+----------------------+------------+
+| **Distrital 2022** | 960                  | 451                   | 256                  | 1667       |
++--------------------+----------------------+-----------------------+----------------------+------------+
+
+Nota: En 2022, debería haber 1694
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#round(prop.table(table(distrital_mito5$Eleccion, distrital_mito5$Nivel),1),2)
+```
+
++--------------------+----------------------+-----------------------+----------------------+
+| **Elección**       | **Competencia Alta** | **Competencia Media** | **Competencia Baja** |
++:==================:+:====================:+:=====================:+:====================:+
+| **Distrital 2002** | 69%                  | 22%                   | 9%                   |
++--------------------+----------------------+-----------------------+----------------------+
+| **Distrital 2006** | 66%                  | 23%                   | 11%                  |
++--------------------+----------------------+-----------------------+----------------------+
+| **Distrital 2010** | 65%                  | 24%                   | 11%                  |
++--------------------+----------------------+-----------------------+----------------------+
+| **Distrital 2014** | 63%                  | 26%                   | 11%                  |
++--------------------+----------------------+-----------------------+----------------------+
+| **Distrital 2018** | 63%                  | 26%                   | 11%                  |
++--------------------+----------------------+-----------------------+----------------------+
+| **Distrital 2022** | 58%                  | 27%                   | 15%                  |
++--------------------+----------------------+-----------------------+----------------------+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#export(distrital_mito5,"distrital_mito5.xlsx")
+```
