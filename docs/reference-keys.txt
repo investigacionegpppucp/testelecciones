@@ -52,3 +52,7 @@ porcentaje-de-distritos-según-nivel-de-concentración-electoral-en-elecciones-d
 organizaciones-políticas-candidatas
 participación-electoral
 el-voto-no-válido
+participación-de-mujeres
+elecciones-regionales-4
+elecciones-provinciales-4
+elecciones-distritales-4
