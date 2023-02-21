@@ -1,7 +1,7 @@
 --- 
-title: "Mitos y Verdades de las Elecciones Subnacionales en Perú"
-author: Área de investigación e incidencia de la Escuela de Gobierno y Políticas Públicas
-  - PUCP
+title: "Fact checking de las Elecciones Subnacionales en Perú"
+author: "Área de investigación e incidencia de la Escuela de Gobierno y Políticas
+  Públicas - PUCP"
 date: 'Equipo de trabajo: Jorge Aragón, Marylía Cruz y Paolo Sanchez'
 site: bookdown::bookdown_site
 ---
